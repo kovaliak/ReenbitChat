@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ReenbitChat.Services")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9ebd6da55d0a7dc5d81246129c98c3bff29ee178")]
 [assembly: System.Reflection.AssemblyProductAttribute("ReenbitChat.Services")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ReenbitChat.Services")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
