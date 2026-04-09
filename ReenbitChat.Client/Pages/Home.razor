@@ -1,0 +1,186 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using System.Net.Http.Headers
+@using ReenbitChat.Shared.Dtos.RoomDto
+@using ReenbitChat.Shared.Dtos.UserProfileDto
+@using ReenbitChat.Shared.Services
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject IRoomService RoomService
+@inject NavigationManager Nav
+@attribute [Authorize]
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Available Chat Rooms</h2>
+        <button class="btn btn-primary" @onclick="() => ShowModal()">Create New Room</button>
+    </div>
+
+    <div class="row">
+        @foreach (var room in rooms)
+        {
+            <div class="col-md-4 mb-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center d-flex flex-column">
+                        <h5 class="card-title mb-3">@room.Name</h5>
+                        
+                        <div class="mt-auto d-flex justify-content-center gap-2">
+                            <button class="btn btn-outline-success" @onclick='() => Nav.NavigateTo($"/chat/{room.Name}")'>
+                                💬 Join
+                            </button>
+                            
+                            @if (currentUserId == room.CreatorId)
+                            {
+                                <button class="btn btn-outline-primary" title="Edit Room" @onclick="() => ShowModal(room)">
+                                    ✏️ Edit
+                                </button>
+                                <button class="btn btn-outline-danger" title="Delete Room" @onclick="() => DeleteRoom(room.Id, room.Name)">
+                                    🗑️ Delete
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@if (showModal)
+{
+    <div class="modal show d-block" style="background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(editingRoomId.HasValue ? "Edit Room" : "New Room")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal" disabled="@isSaving"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control" @bind="roomNameInput" placeholder="Enter room name..." disabled="@isSaving" />
+                    
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="text-danger mt-2 fw-bold">@errorMessage</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal" disabled="@isSaving">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveRoom" disabled="@isSaving">
+                        @(isSaving ? "Saving..." : "Save")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<RoomResponse> rooms = new();
+    private string? currentUserId;
+    
+    private bool showModal = false;
+    private string roomNameInput = "";
+    private Guid? editingRoomId = null;
+    private string errorMessage = "";
+    
+    private bool isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "accessToken");
+            if (!string.IsNullOrEmpty(token))
+            {
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                var userProfile = await Http.GetFromJsonAsync<UserProfileResponse>("api/users/me");
+                currentUserId = userProfile?.Id;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user profile: {ex.Message}");
+        }
+
+        await LoadRooms();
+    }
+
+    private async Task LoadRooms()
+    {
+        rooms = await RoomService.GetRoomsAsync();
+        RoomService.NotifyRoomsUpdated();
+    }
+
+    private void ShowModal(RoomResponse? room = null) 
+    { 
+        errorMessage = "";
+        if (room != null)
+        {
+            editingRoomId = room.Id;
+            roomNameInput = room.Name;
+        }
+        else
+        {
+            editingRoomId = null;
+            roomNameInput = "";
+        }
+        showModal = true; 
+    }
+
+    private void CloseModal() 
+    { 
+        if (isSaving) return; 
+        showModal = false; 
+        roomNameInput = "";
+        errorMessage = "";
+        editingRoomId = null;
+    }
+
+    private async Task SaveRoom()
+    {
+        if (string.IsNullOrWhiteSpace(roomNameInput) || isSaving) return;
+
+        isSaving = true;
+        errorMessage = "";
+        StateHasChanged();
+
+        var request = new RoomRequest { Name = roomNameInput };
+        bool success;
+
+        if (editingRoomId.HasValue)
+        {
+            success = await RoomService.UpdateRoomAsync(editingRoomId.Value, request);
+        }
+        else
+        {
+            success = await RoomService.CreateRoomAsync(request);
+        }
+
+        isSaving = false;
+
+        if (success)
+        {
+            await LoadRooms();
+            CloseModal(); 
+        }
+        else
+        {
+            errorMessage = "Failed to save room. The name might already exist!";
+            StateHasChanged(); 
+        }
+    }
+
+    private async Task DeleteRoom(Guid id, string roomName)
+    {
+        bool isConfirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the room '{roomName}'?");
+        
+        if (isConfirmed)
+        {
+            var success = await RoomService.DeleteRoomAsync(id);
+            if (success)
+            {
+                await LoadRooms();
+            }
+        }
+    }
+}

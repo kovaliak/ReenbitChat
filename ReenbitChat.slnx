@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="ReenbitChat.Api/ReenbitChat.Api.csproj" />
+  <Project Path="ReenbitChat.Client/ReenbitChat.Client.csproj" />
+  <Project Path="ReenbitChat.Data/ReenbitChat.Data.csproj" />
+  <Project Path="ReenbitChat.Services/ReenbitChat.Services.csproj" />
+  <Project Path="ReenbitChat.Shared/ReenbitChat.Shared.csproj" />
+</Solution>

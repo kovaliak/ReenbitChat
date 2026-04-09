@@ -1,0 +1,11 @@
+C:\Users\ReenbitChat\ReenbitChat.Shared\bin\Release\net8.0\ReenbitChat.Shared.deps.json
+C:\Users\ReenbitChat\ReenbitChat.Shared\bin\Release\net8.0\ReenbitChat.Shared.dll
+C:\Users\ReenbitChat\ReenbitChat.Shared\bin\Release\net8.0\ReenbitChat.Shared.pdb
+C:\Users\ReenbitChat\ReenbitChat.Shared\obj\Release\net8.0\ReenbitChat.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ReenbitChat\ReenbitChat.Shared\obj\Release\net8.0\ReenbitChat.Shared.AssemblyInfoInputs.cache
+C:\Users\ReenbitChat\ReenbitChat.Shared\obj\Release\net8.0\ReenbitChat.Shared.AssemblyInfo.cs
+C:\Users\ReenbitChat\ReenbitChat.Shared\obj\Release\net8.0\ReenbitChat.Shared.csproj.CoreCompileInputs.cache
+C:\Users\ReenbitChat\ReenbitChat.Shared\obj\Release\net8.0\ReenbitChat.Shared.dll
+C:\Users\ReenbitChat\ReenbitChat.Shared\obj\Release\net8.0\refint\ReenbitChat.Shared.dll
+C:\Users\ReenbitChat\ReenbitChat.Shared\obj\Release\net8.0\ReenbitChat.Shared.pdb
+C:\Users\ReenbitChat\ReenbitChat.Shared\obj\Release\net8.0\ref\ReenbitChat.Shared.dll

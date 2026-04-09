@@ -1,0 +1,92 @@
+@page "/login"
+@using ReenbitChat.Client.Services
+@using ReenbitChat.Shared.Dtos.LoginDto
+@using ReenbitChat.Shared.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using ReenbitChat.Client.Providers
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+
+<div class="card-body">
+    <h3 class="text-center mb-4">Welcome Back</h3>
+
+    @if (showError)
+    {
+        <div class="alert alert-danger" role="alert">
+            Invalid email or password.
+        </div>
+    }
+
+    <form @onsubmit="HandleLogin">
+        <div class="mb-3">
+            <label class="form-label">Email address</label>
+            <input type="email" class="form-control" @bind="email" placeholder="name@example.com" required />
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" @bind="password" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 mb-3" disabled="@isLoading">
+            @if (isLoading)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Logging in...</span>
+            }
+            else
+            {
+                <span>Login</span>
+            }
+        </button>
+
+        <div class="text-center">
+            <span class="text-muted">Don't have an account?</span> 
+            <a href="/register" class="text-decoration-none">Sign up</a>
+        </div>
+    </form>
+</div>
+
+@code {
+    private string email = "";
+    private string password = "";
+    private bool showError = false;
+    private bool isLoading = false;
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        showError = false;
+
+        var loginRequest = new LoginRequest
+        {
+            Email = email,
+            Password = password
+        };
+
+        try 
+        {
+            var token = await AuthService.LoginAsync(loginRequest);
+            
+            if (!string.IsNullOrEmpty(token))
+            {
+                ((CustomAuthStateProvider)AuthStateProvider).MarkUserAsAuthenticated(token, email);
+                
+                Nav.NavigateTo("/");
+            }
+            else
+            {
+                Console.WriteLine("Токен порожній!");
+                showError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.StackTrace);
+            showError = true;
+        }
+
+        isLoading = false;
+    }
+}

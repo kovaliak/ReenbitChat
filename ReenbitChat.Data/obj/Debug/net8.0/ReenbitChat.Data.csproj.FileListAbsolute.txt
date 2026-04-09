@@ -1,0 +1,17 @@
+C:\Users\ReenbitChat\ReenbitChat.Data\bin\Debug\net8.0\ReenbitChat.Data.deps.json
+C:\Users\ReenbitChat\ReenbitChat.Data\bin\Debug\net8.0\ReenbitChat.Data.runtimeconfig.json
+C:\Users\ReenbitChat\ReenbitChat.Data\bin\Debug\net8.0\ReenbitChat.Data.dll
+C:\Users\ReenbitChat\ReenbitChat.Data\bin\Debug\net8.0\ReenbitChat.Data.pdb
+C:\Users\ReenbitChat\ReenbitChat.Data\bin\Debug\net8.0\ReenbitChat.Shared.dll
+C:\Users\ReenbitChat\ReenbitChat.Data\bin\Debug\net8.0\ReenbitChat.Shared.pdb
+C:\Users\ReenbitChat\ReenbitChat.Data\obj\Debug\net8.0\ReenbitChat.Data.csproj.AssemblyReference.cache
+C:\Users\ReenbitChat\ReenbitChat.Data\obj\Debug\net8.0\ReenbitChat.Data.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ReenbitChat\ReenbitChat.Data\obj\Debug\net8.0\ReenbitChat.Data.AssemblyInfoInputs.cache
+C:\Users\ReenbitChat\ReenbitChat.Data\obj\Debug\net8.0\ReenbitChat.Data.AssemblyInfo.cs
+C:\Users\ReenbitChat\ReenbitChat.Data\obj\Debug\net8.0\ReenbitChat.Data.csproj.CoreCompileInputs.cache
+C:\Users\ReenbitChat\ReenbitChat.Data\obj\Debug\net8.0\ReenbitC.1A6DC313.Up2Date
+C:\Users\ReenbitChat\ReenbitChat.Data\obj\Debug\net8.0\ReenbitChat.Data.dll
+C:\Users\ReenbitChat\ReenbitChat.Data\obj\Debug\net8.0\refint\ReenbitChat.Data.dll
+C:\Users\ReenbitChat\ReenbitChat.Data\obj\Debug\net8.0\ReenbitChat.Data.pdb
+C:\Users\ReenbitChat\ReenbitChat.Data\obj\Debug\net8.0\ReenbitChat.Data.genruntimeconfig.cache
+C:\Users\ReenbitChat\ReenbitChat.Data\obj\Debug\net8.0\ref\ReenbitChat.Data.dll

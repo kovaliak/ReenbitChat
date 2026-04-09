@@ -1,0 +1,234 @@
+@page "/chat/{RoomName}"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using ReenbitChat.Shared.Dtos.MessageDto
+@using ReenbitChat.Shared.Dtos.UserProfileDto
+@using ReenbitChat.Shared.Enums
+@using ReenbitChat.Shared.Services
+@using System.Net.Http.Headers
+@inject IChatService ChatService
+@inject HttpClient Http
+@inject IMessageService MessageService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+@attribute [Authorize]
+@implements IDisposable
+
+<h3>Chat: @RoomName</h3>
+
+<div class="card mb-3 shadow-sm">
+    <div id="chatContainer" class="card-body" style="height: 560px; overflow-y: auto; background: #fdfdfd;">
+        @foreach (var msg in messages)
+        {
+            @if (msg.UserName == "System")
+            {
+                <div class="text-center text-muted small my-2">
+                    <em>@msg.Text</em>
+                </div>
+            }
+            else
+            {
+                string sentimentBorder = msg.Sentiment switch {
+                    Sentiment.Positive => "border-success border-2", 
+                    Sentiment.Negative => "border-danger border-2", 
+                    Sentiment.Neutral => "border-secondary", 
+                    _ => "border-light"
+                };
+
+                string sentimentEmoji = msg.Sentiment switch {
+                    Sentiment.Positive => "😊",
+                    Sentiment.Negative => "😠",
+                    Sentiment.Neutral => "😐",
+                    _ => ""
+                };
+
+                <div class="mb-3 d-flex @(msg.UserName == currentUserDisplayName ? "justify-content-end" : "justify-content-start")">
+                    <div class="p-2 rounded shadow-sm position-relative @sentimentBorder" 
+                         style="max-width: 75%; background: @(msg.UserName == currentUserDisplayName ? "#e3f2fd" : "#fff");">
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong class="small text-primary me-3">@msg.UserName @sentimentEmoji </strong>
+                            @if (msg.UserName == currentUserDisplayName)
+                            {
+                                <div class="dropdown d-inline position-relative">
+                                    <button class="btn btn-sm p-0 border-0" type="button" @onclick="() => ToggleDropdown(msg.Id)">
+                                        <span style="font-size: 1.2rem; cursor: pointer;">⋮</span>
+                                    </button>
+                                    
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm @(activeDropdownId == msg.Id ? "show d-block" : "")" 
+                                        style="position: absolute; right: 0; top: 100%; z-index: 1050;">
+                                        <li><button class="dropdown-item btn-sm" @onclick="() => StartEdit(msg)">✏️ Edit</button></li>
+                                        <li><button class="dropdown-item btn-sm text-danger" @onclick="() => DeleteMessage(msg.Id)">🗑️ Delete</button></li>
+                                    </ul>
+                                </div>
+                            }
+                        </div>
+
+                        @if (editingMessageId == msg.Id)
+                        {
+                            <div class="mt-1">
+                                <input @bind="editText" class="form-control form-control-sm mb-1" />
+                                <button class="btn btn-success btn-sm" @onclick="SaveEdit">Save</button>
+                                <button class="btn btn-light btn-sm" @onclick="() => editingMessageId = null">Cancel</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-dark">@msg.Text</div>
+                        }
+                        <div class="text-end" style="font-size: 0.7rem; color: #aaa;">@msg.CreatedAt.ToString("HH:mm")</div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<div class="input-group mt-3 shadow-sm">
+    <input @bind="messageInput" @onkeyup="HandleKeyUp" class="form-control" placeholder="Type a message..." />
+    <button class="btn btn-primary" @onclick="Send">Send</button>
+</div>
+
+@code {
+    [Parameter] public string RoomName { get; set; } = string.Empty;
+    private string messageInput = "";
+    private List<MessageResponse> messages = new();
+    private string? currentUserDisplayName;
+    private string? currentUserId;
+    private Guid? editingMessageId;
+    private Guid? activeDropdownId;
+    private string editText = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "accessToken");
+        if (!string.IsNullOrEmpty(token))
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "api/users/me");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            
+            var response = await Http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                var userProfile = await response.Content.ReadFromJsonAsync<UserProfileResponse>();
+                
+                currentUserId = userProfile?.Id;
+                currentUserDisplayName = userProfile?.DisplayName; 
+            }
+        }
+
+        ChatService.OnMessageReceived += HandleMessageReceived;
+        ChatService.OnSystemMessageReceived += HandleSystemMessage;
+        ChatService.OnMessageUpdated += HandleMessageUpdated;
+        ChatService.OnMessageDeleted += HandleMessageDeleted;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        messages = await MessageService.GetChatHistoryAsync(RoomName);
+        await ChatService.ConnectAsync();
+        await ChatService.JoinRoom(RoomName);
+
+        await ScrollToBottom();
+    }
+
+    private async void HandleSystemMessage(string text)
+    {
+        messages.Add(new MessageResponse { 
+            Id = Guid.NewGuid(),
+            UserName = "System",
+            Text = text, 
+            CreatedAt = DateTime.Now,
+            Sentiment = Sentiment.Neutral
+        });
+        await InvokeAsync(StateHasChanged);
+        await ScrollToBottom();
+    }
+
+    private async void HandleMessageReceived(Guid id, string user, string text, Sentiment sentiment)
+    {
+        messages.Add(new MessageResponse { 
+            Id = id,
+            UserName = user, 
+            Text = text, 
+            CreatedAt = DateTime.Now,
+            Sentiment = sentiment
+        });
+        await InvokeAsync(StateHasChanged);
+        await ScrollToBottom();
+    }
+
+    private void HandleMessageUpdated(Guid id, string newText)
+    {
+        var msg = messages.FirstOrDefault(m => m.Id == id);
+        if (msg != null) msg.Text = newText;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleMessageDeleted(Guid id)
+    {
+        messages.RemoveAll(m => m.Id == id);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleDropdown(Guid id)
+    {
+        activeDropdownId = activeDropdownId == id ? null : id;
+    }
+
+    private void StartEdit(MessageResponse msg) 
+    { 
+        editingMessageId = msg.Id; 
+        editText = msg.Text; 
+        activeDropdownId = null;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (editingMessageId.HasValue && currentUserId != null)
+        {
+            var success = await MessageService.UpdateMessageAsync(editingMessageId.Value, editText, currentUserId);
+            if (success)
+            {
+                await ChatService.UpdateMessageAsync(RoomName, editingMessageId.Value, editText);
+                editingMessageId = null;
+            }
+        }
+    }
+
+    private async Task DeleteMessage(Guid id)
+    {
+        activeDropdownId = null;
+        if (currentUserId != null && await JS.InvokeAsync<bool>("confirm", "Delete this message?"))
+        {
+            var success = await MessageService.DeleteMessageAsync(id, currentUserId);
+            if (success) await ChatService.DeleteMessageAsync(RoomName, id);
+        }
+    }
+
+    private async Task Send()
+    {
+        if (!string.IsNullOrWhiteSpace(messageInput))
+        {
+            await ChatService.SendMessageAsync(RoomName, messageInput);
+            messageInput = "";
+        }
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e) { if (e.Key == "Enter") await Send(); }
+
+    public void Dispose()
+    {
+        ChatService.OnMessageReceived -= HandleMessageReceived;
+        ChatService.OnSystemMessageReceived -= HandleSystemMessage;
+        ChatService.OnMessageUpdated -= HandleMessageUpdated;
+        ChatService.OnMessageDeleted -= HandleMessageDeleted;
+    }
+
+    private async Task ScrollToBottom()
+    {
+        await Task.Delay(50); 
+        await JS.InvokeVoidAsync("eval", "var chat = document.getElementById('chatContainer'); if (chat) chat.scrollTop = chat.scrollHeight;");
+    }
+}

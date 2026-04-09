@@ -1,0 +1,85 @@
+@page "/register"
+@using ReenbitChat.Client.Services
+@using ReenbitChat.Shared.Dtos.RegisterDto
+@using ReenbitChat.Shared.Services
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+
+<div class="card-body">
+    <h3 class="text-center mb-4">Create an Account</h3>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+
+    <form @onsubmit="HandleRegister">
+        <div class="mb-3">
+            <label class="form-label">Display Name</label>
+            <input type="text" class="form-control" @bind="displayName" placeholder="How should we call you?" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email address</label>
+            <input type="email" class="form-control" @bind="email" placeholder="name@example.com" required />
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" @bind="password" placeholder="Min. 6 characters" required />
+            <div class="form-text">Needs at least 1 uppercase, 1 digit, and 1 special character.</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 mb-3" disabled="@isLoading">
+            @if (isLoading)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Registering...</span>
+            }
+            else
+            {
+                <span>Register</span>
+            }
+        </button>
+
+        <div class="text-center">
+            <span class="text-muted">Already have an account?</span> 
+            <a href="/login" class="text-decoration-none">Log in here</a>
+        </div>
+    </form>
+</div>
+
+@code {
+    private string email = "";
+    private string password = "";
+    private string displayName = "";
+    private string? errorMessage;
+    private bool isLoading = false;
+
+    private async Task HandleRegister()
+    {
+        isLoading = true;
+        errorMessage = null;
+        var registerRequest = new RegisterRequest
+        {
+            Email = email,
+            Password = password,
+            DisplayName = displayName
+        };
+
+        var error = await AuthService.RegisterAsync(registerRequest);
+
+        if (error == null)
+        {
+            Nav.NavigateTo("/login");
+        }
+        else
+        {
+            errorMessage = error;
+        }
+
+        isLoading = false;
+    }
+}

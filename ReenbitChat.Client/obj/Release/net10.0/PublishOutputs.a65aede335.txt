@@ -1,0 +1,4 @@
+C:\Users\ReenbitChat\ReenbitChat.Client\bin\Release\net10.0\publish\wwwroot\index.html
+C:\Users\ReenbitChat\ReenbitChat.Client\bin\Release\net10.0\publish\ReenbitChat.Client.runtimeconfig.json
+C:\Users\ReenbitChat\ReenbitChat.Client\bin\Release\net10.0\publish\dotnet.js
+C:\Users\ReenbitChat\ReenbitChat.Client\bin\Release\net10.0\publish\web.config

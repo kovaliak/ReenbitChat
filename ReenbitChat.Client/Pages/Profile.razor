@@ -1,0 +1,224 @@
+@page "/profile"
+@using Microsoft.AspNetCore.Components.Authorization
+@using ReenbitChat.Shared.Dtos.UserProfileDto
+@using ReenbitChat.Shared.Services
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+
+<div class="container mt-4">
+    <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-body p-5">
+            
+            <div class="mb-4">
+                <h2 class="fw-bold mb-1">Account Settings</h2>
+                <p class="text-muted">Manage your personal information and security</p>
+            </div>
+
+            <hr class="mb-4" />
+
+            @if (isLoading)
+            {
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            }
+            else if (profile != null)
+            {
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-secondary small text-uppercase fw-bold d-block mb-1">Display Name</label>
+                        <div class="fs-5 fw-semibold text-dark">@profile.DisplayName</div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="text-secondary small text-uppercase fw-bold d-block mb-1">Email Address</label>
+                        <div class="fs-5 fw-semibold text-dark">@profile.Email</div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-danger">Failed to load profile data.</div>
+            }
+
+            <div class="d-flex flex-wrap gap-2 pt-3 border-top">
+                <button class="btn btn-outline-primary shadow-sm" disabled="@isLoading" @onclick="TogglePasswordForm">
+                    <i class="bi bi-key me-2"></i> Change Password
+                </button>
+                
+                <button class="btn btn-outline-danger shadow-sm" disabled="@isLoading" @onclick="ToggleDeleteForm">
+                    <i class="bi bi-trash me-2"></i> Delete Account
+                </button>
+
+                <button class="btn btn-danger px-4 ms-auto shadow-sm" @onclick="HandleLogout">
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
+                </button>
+            </div>
+
+            @if (showPasswordForm)
+            {
+                <div class="mt-4 p-4 bg-light rounded border">
+                    <h5 class="fw-bold mb-3">Change Your Password</h5>
+                    
+                    @if (!string.IsNullOrEmpty(passwordMessage))
+                    {
+                        <div class="alert @(isPasswordSuccess ? "alert-success" : "alert-danger") py-2">
+                            @passwordMessage
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Current Password</label>
+                        <input type="password" class="form-control" @bind="passwordModel.OldPassword" placeholder="Enter current password" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">New Password</label>
+                        <input type="password" class="form-control" @bind="passwordModel.NewPassword" placeholder="Enter new password" />
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button class="btn btn-secondary btn-sm px-3" @onclick="TogglePasswordForm">Cancel</button>
+                        <button class="btn btn-primary btn-sm px-3" @onclick="SubmitPasswordChange" disabled="@isChangingPassword">
+                            @if(isChangingPassword) 
+                            { 
+                                <span class="spinner-border spinner-border-sm me-1"></span> 
+                            }
+                            Save New Password
+                        </button>
+                    </div>
+                </div>
+            }
+
+            @if (showDeleteForm)
+            {
+                <div class="mt-4 p-4 bg-danger-subtle rounded border border-danger">
+                    <h5 class="fw-bold text-danger mb-3">Delete Account</h5>
+                    <p class="small text-dark">This action is <strong>permanent</strong>. All your messages and data will be removed. Please enter your password to confirm.</p>
+                    
+                    @if (!string.IsNullOrEmpty(deleteMessage))
+                    {
+                        <div class="alert alert-danger py-2">@deleteMessage</div>
+                    }
+
+                    <div class="mb-3">
+                        <input type="password" class="form-control" @bind="confirmPassword" placeholder="Confirm your password" />
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button class="btn btn-secondary btn-sm px-3" @onclick="ToggleDeleteForm">Cancel</button>
+                        <button class="btn btn-danger btn-sm px-3" @onclick="SubmitDeleteAccount" disabled="@isDeleting">
+                            @if(isDeleting) 
+                            { 
+                                <span class="spinner-border spinner-border-sm me-1"></span> 
+                            }
+                            Permanently Delete My Account
+                        </button>
+                    </div>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private UserProfileResponse? profile;
+    private bool isLoading = true;
+    private bool showPasswordForm = false;
+    private bool isChangingPassword = false;
+    private string passwordMessage = "";
+    private bool isPasswordSuccess = false;
+    private PasswordRequest passwordModel = new() { OldPassword = "", NewPassword = "" };
+    private bool showDeleteForm = false;
+    private bool isDeleting = false;
+    private string deleteMessage = "";
+    private string confirmPassword = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+            profile = await AuthService.GetUserProfileAsync();     
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading profile: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void TogglePasswordForm()
+    {
+        showPasswordForm = !showPasswordForm;
+        passwordMessage = "";
+        passwordModel = new() { OldPassword = "", NewPassword = "" };
+        
+        if (showPasswordForm) showDeleteForm = false;
+    }
+
+    private async Task SubmitPasswordChange()
+    {
+        isChangingPassword = true;
+        passwordMessage = "";
+
+        var error = await AuthService.ChangePasswordAsync(passwordModel);
+
+        if (error == null)
+        {
+            isPasswordSuccess = true;
+            passwordMessage = "Password changed successfully!";
+            passwordModel = new() { OldPassword = "", NewPassword = "" };
+        }
+        else
+        {
+            isPasswordSuccess = false;
+            passwordMessage = error;
+        }
+
+        isChangingPassword = false;
+    }
+
+    private void ToggleDeleteForm()
+    {
+        showDeleteForm = !showDeleteForm;
+        deleteMessage = "";
+        confirmPassword = "";
+        
+        if (showDeleteForm) showPasswordForm = false;
+    }
+
+    private async Task SubmitDeleteAccount()
+    {
+        if (string.IsNullOrWhiteSpace(confirmPassword))
+        {
+            deleteMessage = "Please enter your password to confirm.";
+            return;
+        }
+
+        isDeleting = true;
+        deleteMessage = "";
+
+        var request = new DeleteAccountRequest { Password = confirmPassword };
+        var error = await AuthService.DeleteAccountAsync(request);
+
+        if (error == null)
+        {
+            Nav.NavigateTo("/login", forceLoad: true);
+        }
+        else
+        {
+            deleteMessage = error;
+            isDeleting = false;
+        }
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+}
